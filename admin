@@ -1,0 +1,448 @@
+package admin;
+
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+//import java.util.HashMap;
+//import java.util.LinkedHashMap;
+import java.util.List;
+//import java.util.Map;
+import java.util.Random;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+
+//import javax.servlet.http.HttpSession;
+
+//import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+//import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import admin.Category;
+import admin.CategoryDao;
+import admin.Product;
+import admin.ProductDao;
+import admin.Unit;
+import admin.UnitDao;
+import farmer.Viewpurchase;
+import user.User;
+import admin.Assign;
+import admin.AssignDao;
+import admin.Emp;
+import admin.EmpDao;
+import admin.Stock;
+import admin.StockDao;
+
+@Controller
+public class AdminController {
+	
+	@Autowired  
+	CategoryDao cdao;
+	@Autowired  
+	EmpDao edao;
+	@Autowired
+	ProductDao pdao;
+	@Autowired
+	UnitDao undao;
+	@Autowired
+	AssignDao asdao;
+	@Autowired
+	StockDao sdao;
+
+	//category
+
+	@RequestMapping(value="/category")
+	
+	public String admin(ModelMap model)
+	{
+		model.addAttribute("command",new Category());
+		model.addAttribute("clist",cdao.display());
+		return "admin/category";
+	}
+	
+	@RequestMapping(value="/add",method=RequestMethod.POST)
+	public String register(@ModelAttribute("admin")Category c)
+	{
+		cdao.add(c);
+		return "redirect:/category";
+	}
+	
+	//newItem
+	
+
+	
+	
+	@RequestMapping(value="/delete/{catid}")
+	public String delete(@PathVariable String catid,ModelMap model)
+	{
+		
+		System.out.println(catid);
+		cdao.delete(catid);
+		return "redirect:/category";
+	}
+	
+	
+	@RequestMapping(value="/edit/{catid}")
+	public String category(ModelMap model,@PathVariable String catid)
+	{
+		Category cat=cdao.find(catid);
+		model.addAttribute("command",cat);
+		return "admin/Editcategory";
+		}
+
+	@RequestMapping(value="/editcat",method=RequestMethod.POST)
+	public String edit_cat(@ModelAttribute("editcat")Category cat) {
+		cdao.edit(cat);
+		return "redirect:/category";
+	}
+
+	
+	//employee registration
+	
+	@RequestMapping(value="/Empreg")
+	public String emp_reg(ModelMap model)
+	{
+		model.addAttribute("command",new Emp());
+		model.addAttribute("elist",edao.display());
+		return "admin/Empreg";
+	}
+
+	@RequestMapping(value="/saveemp",method=RequestMethod.POST)
+	public String empsave(@ModelAttribute("admin")Emp e)
+	{
+		edao.save(e);
+		return "redirect:/Empreg";	
+	}
+
+	@RequestMapping(value="/deleteemp/{empid}")
+	public String deleteemp(@PathVariable String empid,ModelMap model)
+	{
+		
+		System.out.println(empid);
+		edao.deleteemp(empid);
+		return "redirect:/Empreg";
+	}
+
+	
+	@RequestMapping(value="/editemp/{empid}")
+	public String employee(ModelMap model,@PathVariable String empid)
+	{
+		Emp emp=edao.find(empid);
+		model.addAttribute("command",emp);
+		return "admin/Editemp";
+		}
+
+	@RequestMapping(value="/editemp",method=RequestMethod.POST)
+	public String edit_emp(@ModelAttribute("editemp")Emp emp) {
+		edao.editemp(emp);
+		return "redirect:/Empreg";
+	}
+
+	//product
+	
+	@RequestMapping(value="/Product")
+	public String product(ModelMap model)
+	{
+		model.addAttribute("command",new Product());
+		
+		List<Category> clist=cdao.display();
+		model.addAttribute("categorylist",clist);
+		model.addAttribute("plist",pdao.displayp());
+		
+		List<Punit> ulist=pdao.displayUnit();
+		model.addAttribute("unitlist", ulist);
+		model.addAttribute("plist",pdao.displayp());
+		return "admin/Product";
+	}
+	
+	
+	private static final String UPLOAD_DIRECTORY ="/WEB-INF/resources/productImage"; 
+	
+	
+	@RequestMapping(value="/addproduct",method=RequestMethod.POST)
+	public String add_product(@ModelAttribute("admin")Product p,@RequestParam CommonsMultipartFile file,HttpSession session)throws Exception
+	{
+		//
+		
+		 ServletContext context = session.getServletContext();  
+		    String path = context.getRealPath(UPLOAD_DIRECTORY); 
+		    String fn="";
+		   
+		    //get file name
+		    	
+		    String filename = file.getOriginalFilename();  
+		    if(filename!="")
+	    	{
+		    
+		    System.out.println(path+" "+filename);        
+		  
+		    String ext=filename.substring(filename.lastIndexOf("."));
+		    
+		    Random r=new Random();
+		    int r_num=r.nextInt(1111)+999;
+		    
+		    fn="file_"+r_num+ext;
+		    
+		    //write file to path
+		    
+		    byte[] bytes = file.getBytes();  
+		    BufferedOutputStream stream =new BufferedOutputStream(new FileOutputStream(  
+		         new File(path +File.separator + fn)));  
+		  
+		    stream.write(bytes);  
+		    stream.flush();  
+		    stream.close();  
+		    
+		    
+		    	} 
+ 
+		
+		pdao.addproduct(p,fn);
+		return "redirect:/Product";
+	}
+	
+	@RequestMapping(value="/deleteproduct/{prdid}")
+	public String deleteproduct(@PathVariable String prdid,ModelMap model)
+	{
+		
+		System.out.println(prdid);
+		pdao.deleteproduct(prdid);
+		return "redirect:/Product";
+	}
+	
+	@RequestMapping(value="/editproduct/{prdid}")
+	public String product(ModelMap model,@PathVariable String prdid)
+	{
+		Product product=pdao.find(prdid);
+		model.addAttribute("command",product);
+		model.addAttribute("prod",product);
+		List<Category> clist=cdao.display();
+		model.addAttribute("categorylist",clist);
+		return "admin/EditProduct";
+		}
+	
+	@RequestMapping(value="/editproduct",method=RequestMethod.POST)
+	public String edit_prd(@ModelAttribute("editproduct")Product product) {
+		pdao.editproduct(product);
+		return "redirect:/Product";
+	}
+	
+	//unit
+	
+    @RequestMapping(value="/Unit")
+	public String unit(ModelMap model)
+	{
+		model.addAttribute("command",new Unit());
+		model.addAttribute("unlist",undao.displayunit());
+		return "admin/Unit";
+	}
+
+	
+    @RequestMapping(value="/addunit",method=RequestMethod.POST)
+	public String add_unit(@ModelAttribute("admin")Unit u)
+	{
+		undao.addunit(u);
+		return "redirect:/Unit";
+	}
+    
+    @RequestMapping(value="/deleteunit/{unitid}")
+	public String deleteunit(@PathVariable String unitid,ModelMap model)
+	{
+		
+		System.out.println(unitid);
+		undao.deleteunit(unitid);
+		return "redirect:/Unit";
+	}
+    
+    @RequestMapping(value="/editunit/{unitid}")
+	public String unit(ModelMap model,@PathVariable String unitid)
+	{
+		Unit unit=undao.findunit(unitid);
+		model.addAttribute("command",unit);
+		return "admin/EditUnit";
+		}
+	
+	@RequestMapping(value="/editunit",method=RequestMethod.POST)
+	public String editunit(@ModelAttribute("editunit")Unit unit) {
+		undao.editunit(unit);
+		return "redirect:/Unit";
+	}
+	
+    //assign duties
+	
+	@RequestMapping(value="/Assign")
+	public String assign(ModelMap model)
+	{
+		List<Unit> unlist=undao.displayunit();
+		model.addAttribute("unitlist",unlist);
+		model.addAttribute("command",new Assign());
+		List<Emp> elist=edao.display();
+		model.addAttribute("employeelist",elist);
+		
+		
+		model.addAttribute("aslist",asdao.displayassign());
+		return "admin/Assign";
+	}
+
+	@RequestMapping(value="/addassign",method=RequestMethod.POST)
+	public String add_assign(@ModelAttribute("admin")Assign as)
+	{
+		Date d=new Date();
+		SimpleDateFormat sdf=new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
+		as.setDatetime(sdf.format(d));
+		asdao.addassign(as);
+		return "redirect:/Assign";
+	}
+
+	@RequestMapping(value="/deleteassign/{asgid}")
+	public String delete_assign(@PathVariable String asgid,ModelMap model)
+	{
+		
+		System.out.println(asgid);
+		asdao.deleteassign(asgid);
+		return "redirect:/Assign";
+	}
+
+	@RequestMapping(value="/editassign/{asgid}")
+	public String assign(ModelMap model,@PathVariable String asgid)
+	{
+		Assign assign=asdao.findassign(asgid);
+		model.addAttribute("command",assign);
+		model.addAttribute("asgn",assign);
+		List<Unit> unlist=undao.displayunit();
+		model.addAttribute("unitlist",unlist);
+		List<Emp> elist=edao.display();
+		model.addAttribute("employeelist",elist);
+		return "admin/EditAssign";
+		}
+	
+	@RequestMapping(value="/updateassign",method=RequestMethod.POST)
+	public String edit_assign(@ModelAttribute("editassign")Assign assign) {
+		asdao.editassign(assign);
+		return "redirect:/Assign";
+	}
+
+	//stock
+	
+	@RequestMapping(value="/Stock")
+	public String stock(ModelMap model)
+	{
+		model.addAttribute("command",new Stock());
+		
+		List<Product> plist=pdao.displayp();     
+		model.addAttribute("productlist",plist);
+		model.addAttribute("slist",sdao.displays());
+		return "admin/Stock";
+	}
+	
+	@RequestMapping(value="/addstock",method=RequestMethod.POST)
+	public String add_stock(@ModelAttribute("admin")Stock s)
+	{
+		sdao.addstock(s);
+		return "redirect:/Stock";
+	}
+	
+	@RequestMapping(value="/deletestock/{stockid}")
+	public String deletestock(@PathVariable String stockid,ModelMap model)
+	{
+		
+		System.out.println(stockid);
+		sdao.deletestock(stockid);
+		return "redirect:/Stock";
+	}
+	
+	@RequestMapping(value="/editstock/{stockid}")
+	public String stock(ModelMap model,@PathVariable String stockid)
+	{
+		Stock stock=sdao.find(stockid);
+		model.addAttribute("command",stock);
+		model.addAttribute("sto",stock);
+		List<Product> plist=pdao.displayp();
+		model.addAttribute("productlist",plist);
+		return "admin/EditStock";
+		}
+	
+	@RequestMapping(value="/editstock",method=RequestMethod.POST)
+	public String edit_stock(@ModelAttribute("editstock")Stock stock) {
+		sdao.editstock(stock);
+		return "redirect:/Stock";
+	}
+	
+	//view suggestion
+	
+	@RequestMapping(value="/suggession")
+	public String suggession(ModelMap model)
+	{
+		
+		
+		List<Suggession> suglist=undao.displaysuggestion();    
+		model.addAttribute("sugglist",suglist);
+		
+		return "admin/ViewSugessions";
+	}
+	
+	//view product
+	
+		@RequestMapping(value="/viewproduct")
+		public String viewproduct(ModelMap model)
+		{
+			
+			
+			List<ViewProduct> prdlist=pdao.displayproduct();    
+			model.addAttribute("plist",prdlist);
+			
+			return "admin/ViewProduct";
+		}
+		
+
+		//view bookings details
+			  	
+			  	@RequestMapping(value="/viewbook")
+			  	public String viewbook(ModelMap model,HttpSession session)
+			  	{
+			  		
+			  		//User u=(User)session.getAttribute("user");
+				//	System.out.println(u.getId()+"idddd");
+					
+			  		
+			  		List<Viewbooking> bolist=pdao.displaybook();    
+			  		model.addAttribute("bolist",bolist);
+			  		
+			  		return "admin/Viewbooking";
+			  	}
+
+//Accept or Reject Booking			  	
+			  	@RequestMapping(value="/BAccept/{bid}")
+			  	public String updatebookaccept(ModelMap model,@PathVariable String bid)
+			  	{
+			  		
+			  		pdao.updatebookrequest(bid,"1");    
+			  		return "redirect:/viewbook";
+			  	}
+
+			  	
+			  	@RequestMapping(value="/BReject/{bid}")
+			  	public String updatebookreject(ModelMap model,@PathVariable String bid)
+			  	{
+			  		
+			  		pdao.updatebookrequest(bid,"2");    
+			  		return "redirect:/viewbook";
+			  	}
+
+
+
+}
+
+	
